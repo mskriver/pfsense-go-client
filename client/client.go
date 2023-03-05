@@ -1,12 +1,20 @@
 package main
 
 import (
+	"bytes"
+	"crypto/tls"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
-	"time"
-	"net/url"
+	"math"
+	"math/rand"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // Default timeout values
@@ -17,11 +25,11 @@ const DefaultBackoffDelayFactor float64 = 3
 
 // Client is the main entry point
 type Client struct {
-	BaseURL	*url.URL
-	http.Client *http.Client
-	username string
-	password string
-	insecure bool
+	BaseURL            *url.URL
+	httpClient         *http.Client
+	username           string
+	password           string
+	insecure           bool
 	reqTimeoutSet      bool
 	reqTimeoutVal      uint32
 	proxyUrl           string
@@ -229,17 +237,7 @@ func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte,
 		return nil, err
 	}
 
-	if c.preserveBaseUrlRef {
-		// Default is false for preserveBaseUrlRef - matching original behavior to strip out BaseURL
-		fURLStr := fURL.String() + pathURL.String()
-		fURL, err = url.Parse(fURLStr)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// Original behavior to strip down BaseURL
-		fURL = fURL.ResolveReference(pathURL)
-	}
+	fURL = fURL.ResolveReference(pathURL)
 
 	var req *http.Request
 	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
@@ -265,7 +263,7 @@ func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte,
 	return req, nil
 }
 
-func (c *Client) MakeRestRequest(method string, rpath string, body *container.Container, authenticated bool) (*http.Request, error) {
+func (c *Client) MakeRestRequest(method string, rpath string, body byte, authenticated bool) (*http.Request, error) {
 
 	pathURL, err := url.Parse(rpath)
 	if err != nil {
@@ -283,8 +281,9 @@ func (c *Client) MakeRestRequest(method string, rpath string, body *container.Co
 	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
 	if method == "GET" {
 		req, err = http.NewRequest(method, fURL.String(), nil)
-	} else {
-		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
+		// } else {
+		// 	req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
+		// }
 	}
 	if err != nil {
 		return nil, err
@@ -305,8 +304,9 @@ func (c *Client) MakeRestRequest(method string, rpath string, body *container.Co
 
 func StrtoInt(s string, startIndex int, bitSize int) (int64, error) {
 	return strconv.ParseInt(s, startIndex, bitSize)
+}
 
-func (c *Client) Do(req *http.Request) (*container.Container, *http.Response, error) {
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	log.Printf("[DEBUG] Begining Do method %s", req.URL.String())
 
 	// retain the request body across multiple attempts
@@ -329,7 +329,7 @@ func (c *Client) Do(req *http.Request) (*container.Container, *http.Response, er
 			if ok := c.backoff(attempts); !ok {
 				log.Printf("[ERROR] HTTP Connection error occured: %+v", err)
 				log.Printf("[DEBUG] Exit from Do method")
-				return nil, nil, errors.New(fmt.Sprintf("Failed to connect to APIC. Verify that you are connecting to an APIC.\nError message: %+v", err))
+				// return nil, nil, errors.New(fmt.Sprintf("Failed to connect to APIC. Verify that you are connecting to an APIC.\nError message: %+v", err))
 			} else {
 				log.Printf("[ERROR] HTTP Connection failed: %s, retries: %v", err, attempts)
 				continue
