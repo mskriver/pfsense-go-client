@@ -115,16 +115,25 @@ func ReqTimeout(timeout uint32) Option {
 	}
 }
 
-func initClient(clientUrl, username string, options ...Option) *Client {
+func initClient(clientUrl, username string, password string, options ...Option) *Client {
 	var transport *http.Transport
 	bUrl, err := url.Parse(clientUrl)
+
+	if err != nil {
+		// cannot move forward if url is undefined
+		log.Fatal(err)
+
+	authClientUrl := bUrl.Scheme + "//" + username + ":" + password + "@" + bUrl.Host + bUrl.Path
+	rUrl, err := url.Parse(authClientUrl)
+
 	if err != nil {
 		// cannot move forward if url is undefined
 		log.Fatal(err)
 	}
 	client := &Client{
-		BaseURL:  bUrl,
+		BaseURL:  rUrl,
 		username: username,
+		password: password,
 	}
 
 	for _, option := range options {
@@ -153,9 +162,9 @@ func initClient(clientUrl, username string, options ...Option) *Client {
 }
 
 // GetClient returns a singleton
-func GetClient(clientUrl, username string, options ...Option) *Client {
+func GetClient(clientUrl, username string, password string, options ...Option) *Client {
 	if clientImpl == nil {
-		clientImpl = initClient(clientUrl, username, options...)
+		clientImpl = initClient(clientUrl, username, password, options...)
 	} else {
 		// making sure it is the same client
 		bUrl, err := url.Parse(clientUrl)
@@ -164,14 +173,14 @@ func GetClient(clientUrl, username string, options ...Option) *Client {
 			log.Fatal(err)
 		}
 		if bUrl != clientImpl.BaseURL {
-			clientImpl = initClient(clientUrl, username, options...)
+			clientImpl = initClient(clientUrl, username, password, options...)
 		}
 	}
 	return clientImpl
 }
 
 // NewClient returns a new Instance of the client
-func NewClient(clientUrl, username string, options ...Option) *Client {
+func NewClient(clientUrl, username string, password string, options ...Option) *Client {
 	// making sure it is the same client
 	_, err := url.Parse(clientUrl)
 	if err != nil {
@@ -181,7 +190,7 @@ func NewClient(clientUrl, username string, options ...Option) *Client {
 
 	// initClient always returns a new struct, so always create a new pointer to allow for
 	// multiple object instances
-	newClientImpl := initClient(clientUrl, username, options...)
+	newClientImpl := initClient(clientUrl, username, password, options...)
 
 	return newClientImpl
 }
