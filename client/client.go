@@ -224,6 +224,24 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 }
 
+func (c *Client) MakeXMLRPCRequestRaw(method string, payload []byte, authenticated bool) (*http.Request, error) {
+	var req *http.Request
+	method := "POST"
+
+	req, err = http.NewRequest(method, c.BaseURL.String(), bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	if c.skipLoggingPayload {
+		log.Printf("HTTP request %s %s", method, c.BaseURL.String())
+	} else {
+		log.Printf("HTTP request %s %s %v", method, c.BaseURL.String(), req)
+	}
+
+	return req, nil
+}
+
 // Takes raw payload and does the http request
 func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte, authenticated bool) (*http.Request, error) {
 
@@ -281,9 +299,9 @@ func (c *Client) MakeRestRequest(method string, rpath string, body byte, authent
 	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
 	if method == "GET" {
 		req, err = http.NewRequest(method, fURL.String(), nil)
-		// } else {
-		// 	req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
-		// }
+	} else {
+		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
+	}
 	}
 	if err != nil {
 		return nil, err
