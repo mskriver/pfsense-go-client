@@ -1,3 +1,3 @@
 module github.com/mskriver/pfsense-go-client
 
-go 1.20
+go 1.19
