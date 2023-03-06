@@ -226,9 +226,9 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 func (c *Client) MakeXMLRPCRequestRaw(method string, payload []byte, authenticated bool) (*http.Request, error) {
 	var req *http.Request
-	method := "POST"
+	// method := "POST"
 
-	req, err = http.NewRequest(method, c.BaseURL.String(), bytes.NewBuffer(payload))
+	req, err := http.NewRequest(method, c.BaseURL.String(), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -281,44 +281,44 @@ func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte,
 	return req, nil
 }
 
-func (c *Client) MakeRestRequest(method string, rpath string, body byte, authenticated bool) (*http.Request, error) {
+// func (c *Client) MakeRestRequest(method string, rpath string, body byte, authenticated bool) (*http.Request, error) {
 
-	pathURL, err := url.Parse(rpath)
-	if err != nil {
-		return nil, err
-	}
+// 	pathURL, err := url.Parse(rpath)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	fURL, err := url.Parse(c.BaseURL.String())
-	if err != nil {
-		return nil, err
-	}
+// 	fURL, err := url.Parse(c.BaseURL.String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	fURL = fURL.ResolveReference(pathURL)
+// 	fURL = fURL.ResolveReference(pathURL)
 
-	var req *http.Request
-	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
-	if method == "GET" {
-		req, err = http.NewRequest(method, fURL.String(), nil)
-	} else {
-		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
-	}
+// 	var req *http.Request
+// 	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
+// 	if method == "GET" {
+// 		req, err = http.NewRequest(method, fURL.String(), nil)
+// 	} else {
+// 		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
+// 	}
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	if c.skipLoggingPayload {
-		log.Printf("HTTP request %s %s", method, rpath)
-	} else {
-		log.Printf("HTTP request %s %s %v", method, rpath, req)
-	}
+// 	if c.skipLoggingPayload {
+// 		log.Printf("HTTP request %s %s", method, rpath)
+// 	} else {
+// 		log.Printf("HTTP request %s %s %v", method, rpath, req)
+// 	}
 
-	if !c.skipLoggingPayload {
-		log.Printf("HTTP request after injection %s %s %v", method, rpath, req)
-	}
+// 	if !c.skipLoggingPayload {
+// 		log.Printf("HTTP request after injection %s %s %v", method, rpath, req)
+// 	}
 
-	return req, nil
-}
+// 	return req, nil
+// }
 
 func StrtoInt(s string, startIndex int, bitSize int) (int64, error) {
 	return strconv.ParseInt(s, startIndex, bitSize)
