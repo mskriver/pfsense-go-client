@@ -122,6 +122,7 @@ func initClient(clientUrl, username string, password string, options ...Option) 
 	if err != nil {
 		// cannot move forward if url is undefined
 		log.Fatal(err)
+	}
 
 	authClientUrl := bUrl.Scheme + "//" + username + ":" + password + "@" + bUrl.Host + bUrl.Path
 	rUrl, err := url.Parse(authClientUrl)
