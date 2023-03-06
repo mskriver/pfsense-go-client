@@ -302,7 +302,7 @@ func (c *Client) MakeRestRequest(method string, rpath string, body byte, authent
 	} else {
 		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
 	}
-	}
+
 	if err != nil {
 		return nil, err
 	}
