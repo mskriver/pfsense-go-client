@@ -52,12 +52,6 @@ func Insecure(insecure bool) Option {
 	}
 }
 
-func Password(password string) Option {
-	return func(client *Client) {
-		client.password = password
-	}
-}
-
 func ProxyUrl(pUrl string) Option {
 	return func(client *Client) {
 		client.proxyUrl = pUrl
@@ -234,6 +228,7 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 }
 
+// Takes raw payload and does the http request
 func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	var req *http.Request
 	method := "POST"
@@ -253,170 +248,8 @@ func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	return req, nil
 }
 
-// Takes raw payload and does the http request
-func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte, authenticated bool) (*http.Request, error) {
-
-	pathURL, err := url.Parse(rpath)
-	if err != nil {
-		return nil, err
-	}
-
-	fURL, err := url.Parse(c.BaseURL.String())
-	if err != nil {
-		return nil, err
-	}
-
-	fURL = fURL.ResolveReference(pathURL)
-
-	var req *http.Request
-	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
-	if method == "GET" {
-		req, err = http.NewRequest(method, fURL.String(), nil)
-	} else {
-		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer(payload))
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", "text/xml; charset=utf-8")
-
-	if c.skipLoggingPayload {
-		log.Printf("HTTP request %s %s", method, rpath)
-	} else {
-		log.Printf("HTTP request %s %s %v", method, rpath, req)
-	}
-
-	if !c.skipLoggingPayload {
-		log.Printf("HTTP request after injection %s %s %v", method, rpath, req)
-	}
-
-	return req, nil
-}
-
-// func (c *Client) MakeRestRequest(method string, rpath string, body byte, authenticated bool) (*http.Request, error) {
-
-// 	pathURL, err := url.Parse(rpath)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	fURL, err := url.Parse(c.BaseURL.String())
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	fURL = fURL.ResolveReference(pathURL)
-
-// 	var req *http.Request
-// 	log.Printf("[DEBUG] BaseURL: %s, pathURL: %s, fURL: %s", c.BaseURL.String(), pathURL.String(), fURL.String())
-// 	if method == "GET" {
-// 		req, err = http.NewRequest(method, fURL.String(), nil)
-// 	} else {
-// 		req, err = http.NewRequest(method, fURL.String(), bytes.NewBuffer((body.Bytes())))
-// 	}
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	if c.skipLoggingPayload {
-// 		log.Printf("HTTP request %s %s", method, rpath)
-// 	} else {
-// 		log.Printf("HTTP request %s %s %v", method, rpath, req)
-// 	}
-
-// 	if !c.skipLoggingPayload {
-// 		log.Printf("HTTP request after injection %s %s %v", method, rpath, req)
-// 	}
-
-// 	return req, nil
-// }
-
 func StrtoInt(s string, startIndex int, bitSize int) (int64, error) {
 	return strconv.ParseInt(s, startIndex, bitSize)
-}
-
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	log.Printf("[DEBUG] Begining Do method %s", req.URL.String())
-
-	// retain the request body across multiple attempts
-	var body []byte
-	if req.Body != nil && c.maxRetries != 0 {
-		body, _ = ioutil.ReadAll(req.Body)
-	}
-
-	for attempts := 0; ; attempts++ {
-		log.Printf("[TRACE] HTTP Request Method and URL: %s %s", req.Method, req.URL.String())
-		if c.maxRetries != 0 {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		}
-		if !c.skipLoggingPayload {
-			log.Printf("[TRACE] HTTP Request Body: %v", req.Body)
-		}
-
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			if ok := c.backoff(attempts); !ok {
-				log.Printf("[ERROR] HTTP Connection error occured: %+v", err)
-				log.Printf("[DEBUG] Exit from Do method")
-				// return nil, nil, errors.New(fmt.Sprintf("Failed to connect to APIC. Verify that you are connecting to an APIC.\nError message: %+v", err))
-			} else {
-				log.Printf("[ERROR] HTTP Connection failed: %s, retries: %v", err, attempts)
-				continue
-			}
-		}
-
-		if !c.skipLoggingPayload {
-			log.Printf("[TRACE] HTTP Response: %d %s %v", resp.StatusCode, resp.Status, resp)
-		} else {
-			log.Printf("[TRACE] HTTP Response: %d %s", resp.StatusCode, resp.Status)
-		}
-
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		bodyStr := string(bodyBytes)
-		resp.Body.Close()
-		if !c.skipLoggingPayload {
-			log.Printf("[DEBUG] HTTP response unique string %s %s %s", req.Method, req.URL.String(), bodyStr)
-		}
-
-		if (resp.StatusCode < 500 || resp.StatusCode > 504) && resp.StatusCode != 405 {
-			// obj, err := container.ParseJSON(bodyBytes)
-			// if err != nil {
-			// 	log.Printf("[ERROR] Error occured while json parsing: %+v", err)
-
-			// 	// If nginx is too busy or the page is not found, APIC's nginx will response with an HTML doc instead of a JSON Response.
-			// 	// In those cases, parse the HTML response for the message and return that to the user
-			// 	htmlErr := c.checkHtmlResp(bodyStr)
-			// 	log.Printf("[ERROR] Error occured while json parsing: %s", htmlErr.Error())
-			// 	log.Printf("[DEBUG] Exit from Do method")
-			// 	return nil, resp, errors.New(fmt.Sprintf("Failed to parse JSON response from: %s. Verify that you are connecting to an APIC.\nHTTP response status: %s\nMessage: %s", req.URL.String(), resp.Status, htmlErr))
-			// }
-
-			log.Printf("[DEBUG] Exit from Do method")
-			// return obj, resp, nil
-		} else {
-			if ok := c.backoff(attempts); !ok {
-				// obj, err := container.ParseJSON(bodyBytes)
-				// if err != nil {
-				// 	log.Printf("[ERROR] Error occured while json parsing: %+v with HTTP StatusCode 405, 500-504", err)
-
-				// 	// If nginx is too busy or the page is not found, APIC's nginx will response with an HTML doc instead of a JSON Response.
-				// 	// In those cases, parse the HTML response for the message and return that to the user
-				// 	htmlErr := c.checkHtmlResp(bodyStr)
-				// 	log.Printf("[ERROR] Error occured while json parsing: %s", htmlErr.Error())
-				// 	log.Printf("[DEBUG] Exit from Do method")
-				// 	return nil, resp, errors.New(fmt.Sprintf("Failed to parse JSON response from: %s. Verify that you are connecting to an APIC.\nHTTP response status: %s\nMessage: %s", req.URL.String(), resp.Status, htmlErr))
-				// }
-
-				log.Printf("[DEBUG] Exit from Do method")
-				// return obj, resp, nil
-			} else {
-				log.Printf("[ERROR] HTTP Request failed: StatusCode %v, Retries: %v", resp.StatusCode, attempts)
-				continue
-			}
-		}
-	}
 }
 
 func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
