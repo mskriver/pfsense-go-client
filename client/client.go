@@ -245,9 +245,9 @@ func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	}
 
 	if c.skipLoggingPayload {
-		log.Printf("HTTP request %s %s %s", method, bUrl.Scheme, bUrl.Host)
+		log.Printf("HTTP request %s %s %s %s", method, bUrl.Scheme, bUrl.Host, bUrl.Path)
 	} else {
-		log.Printf("HTTP request %s %s %s %v", method, bUrl.Scheme, bUrl.Host, req)
+		log.Printf("HTTP request %s %s %s %s %v", method, bUrl.Scheme, bUrl.Host, bUrl.Path, req)
 	}
 
 	return req, nil
@@ -420,7 +420,9 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 }
 
 func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
-	log.Printf("[DEBUG] Begining DoRaw method %s", req.URL.String())
+	bUrl, _ := url.Parse(c.BaseURL.String())
+
+	log.Printf("[DEBUG] Begining DoRaw method %s %s", bUrl.Host, bUrl.Path)
 
 	// retain the request body across multiple attempts
 	var body []byte
@@ -429,7 +431,7 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 	}
 
 	for attempts := 0; ; attempts++ {
-		log.Printf("[TRACE] HTTP Request Method and URL: %s %s", req.Method, req.URL.String())
+		log.Printf("[TRACE] HTTP Request Method and URL: %s %s %s %s", req.Method, bUrl.Scheme, bUrl.Host, bUrl.Path)
 		if c.maxRetries != 0 {
 			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		}
@@ -442,7 +444,7 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 			if ok := c.backoff(attempts); !ok {
 				log.Printf("[ERROR] HTTP Connection error occured: %+v", err)
 				log.Printf("[DEBUG] Exit from DoRaw method")
-				return nil, errors.New(fmt.Sprintf("Failed to connect to APIC. Verify that you are connecting to an APIC.\nError message: %+v", err))
+				return nil, errors.New(fmt.Sprintf("Failed to connect to Pfsense. Verify that you are connecting to an Pfsense.\nError message: %+v", err))
 			} else {
 				log.Printf("[ERROR] HTTP Connection failed: %s, retries: %v", err, attempts)
 				continue
