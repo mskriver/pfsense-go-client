@@ -124,7 +124,7 @@ func initClient(clientUrl, username string, password string, options ...Option) 
 		log.Fatal(err)
 	}
 
-	authClientUrl := bUrl.Scheme + "//" + username + ":" + password + "@" + bUrl.Host + bUrl.Path
+	authClientUrl := bUrl.Scheme + "://" + username + ":" + password + "@" + bUrl.Host + bUrl.Path
 	rUrl, err := url.Parse(authClientUrl)
 
 	if err != nil {
