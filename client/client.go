@@ -268,6 +268,8 @@ func (c *Client) MakeRestRequestRaw(method string, rpath string, payload []byte,
 		return nil, err
 	}
 
+	req.Header.Add("Content-Type", "text/xml; charset=utf-8")
+
 	if c.skipLoggingPayload {
 		log.Printf("HTTP request %s %s", method, rpath)
 	} else {
