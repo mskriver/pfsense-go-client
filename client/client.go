@@ -234,9 +234,10 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 }
 
-func (c *Client) MakeXMLRPCRequestRaw(method string, payload []byte, authenticated bool) (*http.Request, error) {
+func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	var req *http.Request
-	// method := "POST"
+	method := "POST"
+	bUrl, _ := url.Parse(c.BaseURL.String())
 
 	req, err := http.NewRequest(method, c.BaseURL.String(), bytes.NewBuffer(payload))
 	if err != nil {
@@ -244,9 +245,9 @@ func (c *Client) MakeXMLRPCRequestRaw(method string, payload []byte, authenticat
 	}
 
 	if c.skipLoggingPayload {
-		log.Printf("HTTP request %s %s", method, c.BaseURL.String())
+		log.Printf("HTTP request %s %s %s", method, bUrl.Scheme, bUrl.Host)
 	} else {
-		log.Printf("HTTP request %s %s %v", method, c.BaseURL.String(), req)
+		log.Printf("HTTP request %s %s %s %v", method, bUrl.Scheme, bUrl.Host, req)
 	}
 
 	return req, nil
