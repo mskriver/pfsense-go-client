@@ -240,7 +240,7 @@ func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	if c.skipLoggingPayload {
 		log.Printf("HTTP request %s %s", method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path)
 	} else {
-		log.Printf("HTTP request %s %s %s %v", method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path, req)
+		log.Printf("HTTP request %s %s %v", method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path, req)
 	}
 
 	return req, nil
