@@ -238,9 +238,9 @@ func (c *Client) MakeXMLRPCRequestRaw(payload []byte) (*http.Request, error) {
 	}
 
 	if c.skipLoggingPayload {
-		log.Printf("HTTP request %s %s %s %s", method, bUrl.Scheme, bUrl.Host, bUrl.Path)
+		log.Printf("HTTP request %s %s", method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path)
 	} else {
-		log.Printf("HTTP request %s %s %s %s %v", method, bUrl.Scheme, bUrl.Host, bUrl.Path, req)
+		log.Printf("HTTP request %s %s %s %v", method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path, req)
 	}
 
 	return req, nil
@@ -262,7 +262,7 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 	}
 
 	for attempts := 0; ; attempts++ {
-		log.Printf("[TRACE] HTTP Request Method and URL: %s %s %s %s", req.Method, bUrl.Scheme, bUrl.Host, bUrl.Path)
+		log.Printf("[TRACE] HTTP Request Method and URL: %s %s", req.Method, bUrl.Scheme+"://"+bUrl.Host+bUrl.Path)
 		if c.maxRetries != 0 {
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
