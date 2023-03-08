@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
-	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -260,13 +258,13 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 	// retain the request body across multiple attempts
 	var body []byte
 	if req.Body != nil && c.maxRetries != 0 {
-		body, _ = ioutil.ReadAll(req.Body)
+		body, _ = io.ReadAll(req.Body)
 	}
 
 	for attempts := 0; ; attempts++ {
 		log.Printf("[TRACE] HTTP Request Method and URL: %s %s %s %s", req.Method, bUrl.Scheme, bUrl.Host, bUrl.Path)
 		if c.maxRetries != 0 {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+			req.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
 		if !c.skipLoggingPayload {
 			log.Printf("[TRACE] HTTP Request Body: %v", req.Body)
@@ -277,7 +275,7 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 			if ok := c.backoff(attempts); !ok {
 				log.Printf("[ERROR] HTTP Connection error occured: %+v", err)
 				log.Printf("[DEBUG] Exit from DoRaw method")
-				return nil, errors.New(fmt.Sprintf("Failed to connect to Pfsense. Verify that you are connecting to an Pfsense.\nError message: %+v", err))
+				return nil, fmt.Errorf("failed to connect to Pfsense. Verify that you are connecting to an Pfsense.\nError message: %+v", err)
 			} else {
 				log.Printf("[ERROR] HTTP Connection failed: %s, retries: %v", err, attempts)
 				continue
@@ -305,12 +303,12 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 	}
 }
 
-func stripQuotes(word string) string {
-	if strings.HasPrefix(word, "\"") && strings.HasSuffix(word, "\"") {
-		return strings.TrimSuffix(strings.TrimPrefix(word, "\""), "\"")
-	}
-	return word
-}
+// func stripQuotes(word string) string {
+// 	if strings.HasPrefix(word, "\"") && strings.HasSuffix(word, "\"") {
+// 		return strings.TrimSuffix(strings.TrimPrefix(word, "\""), "\"")
+// 	}
+// 	return word
+// }
 
 func (c *Client) backoff(attempts int) bool {
 	log.Printf("[DEBUG] Begining backoff method: attempts %v on %v", attempts, c.maxRetries)
