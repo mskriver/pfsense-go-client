@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -292,16 +290,17 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 
 		if (resp.StatusCode < 500 || resp.StatusCode > 504) && resp.StatusCode != 405 {
 			// Check for Athentication Errors
-			r, _ := io.ReadAll(resp.Body)
-			response_text := bytes.NewBuffer(r).String()
-			if resp.StatusCode == 200 && strings.Contains(response_text, "<string>Authentication failed: Invalid username or password</string>") {
-				log.Printf("[ERROR] Authentication failed: Invalid username or password")
-				log.Printf("[DEBUG] Exit from DoRaw method")
-				return nil, errors.New("authentication failed: Invalid username or password")
-			} else {
-				log.Printf("[DEBUG] Exit from DoRaw method")
-				return resp, nil
-			}
+			// r, _ := io.ReadAll(resp.Body)
+			// response_text := bytes.NewBuffer(r).String()
+			// if resp.StatusCode == 200 && strings.Contains(response_text, "<string>Authentication failed: Invalid username or password</string>") {
+			// 	log.Printf("[ERROR] Authentication failed: Invalid username or password")
+			// 	log.Printf("[DEBUG] Exit from DoRaw method")
+			// 	return nil, errors.New("authentication failed: Invalid username or password")
+			// } else {
+			// 	log.Printf("[DEBUG] Exit from DoRaw method")
+			// 	return resp, nil
+			// }
+			return resp, nil
 		} else {
 			if ok := c.backoff(attempts); !ok {
 				log.Printf("[DEBUG] Exit from DoRaw method")
