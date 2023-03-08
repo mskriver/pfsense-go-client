@@ -291,15 +291,15 @@ func (c *Client) DoRaw(req *http.Request) (*http.Response, error) {
 		}
 
 		if (resp.StatusCode < 500 || resp.StatusCode > 504) && resp.StatusCode != 405 {
-			log.Printf("[DEBUG] Exit from DoRaw method")
-
 			// Check for authentication errors
 			r, _ := io.ReadAll(resp.Body)
 			response_text := bytes.NewBuffer(r).String()
 			if resp.StatusCode == 200 && strings.Contains(response_text, "<string>Authentication failed: Invalid username or password</string>") {
 				log.Printf("[ERROR] Authentication failed: Invalid username or password")
+				log.Printf("[DEBUG] Exit from DoRaw method")
 				return nil, errors.New("authentication failed: Invalid username or password")
 			}
+			log.Printf("[DEBUG] Exit from DoRaw method")
 			return resp, nil
 		} else {
 			if ok := c.backoff(attempts); !ok {
