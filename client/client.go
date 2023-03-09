@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"math/rand"
@@ -229,28 +228,31 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 }
 
-func (c *Client) MakeXMLRPCRequest(method string, params string) (response *string, err error) {
+func (c *Client) MakeXMLRPCRequest(method string, params string) (string, error) {
 	xml_payload := "<?xml version='1.0'?><methodCall><methodName>" + method + "</methodName>" + params + "</methodCall>"
 
 	req, err := c.MakeXMLRPCRequestRaw([]byte(xml_payload))
 	if err != nil {
-		return nil, errors.New("an error occured while executing MakeXMLRPCRequestRaw")
+		return "", errors.New("an error occured while executing MakeXMLRPCRequestRaw")
 	}
 
 	resp_obj, err := c.DoRaw(req)
 	if err != nil {
-		return nil, errors.New("an error occured while executing DoRaw")
+		return "", errors.New("an error occured while executing DoRaw")
 	}
 
-	resp, err := ioutil.ReadAll(resp_obj.Body)
+	resp, err := io.ReadAll(resp_obj.Body)
+	if err != nil {
+		return "", errors.New("an error occured while reading raw response")
+	}
 	resp_text := bytes.NewBuffer(resp).String()
 
 	if resp_obj.StatusCode == 200 && strings.Contains(resp_text, "<string>Authentication failed: Invalid username or password</string>") {
 		// log.Fatal("authentication failed: Invalid username or password")
-		return nil, errors.New("authentication failed: Invalid username or password")
+		return "", errors.New("authentication failed: Invalid username or password")
 	}
 
-	return &resp_text, nil
+	return resp_text, nil
 }
 
 // Takes raw payload and does the http request
