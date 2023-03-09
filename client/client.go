@@ -228,7 +228,7 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 }
 
-func (c *Client) MakeXMLRPCRequest(method string, params string) (string, error) {
+func (c *Client) XMLRPCRequest(method string, params string) (string, error) {
 	xml_payload := "<?xml version='1.0'?><methodCall><methodName>" + method + "</methodName>" + params + "</methodCall>"
 
 	req, err := c.MakeXMLRPCRequestRaw([]byte(xml_payload))
