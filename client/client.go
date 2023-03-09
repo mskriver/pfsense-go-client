@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -224,6 +227,30 @@ func (c *Client) useInsecureHTTPClient(insecure bool) *http.Transport {
 
 	return transport
 
+}
+
+func (c *Client) MakeXMLRPCRequest(method string, params string) (response *string, err error) {
+	xml_payload := "<?xml version='1.0'?><methodCall><methodName>" + method + "</methodName>" + params + "</methodCall>"
+
+	req, err := c.MakeXMLRPCRequestRaw([]byte(xml_payload))
+	if err != nil {
+		return nil, errors.New("an error occured while executing MakeXMLRPCRequestRaw")
+	}
+
+	resp_obj, err := c.DoRaw(req)
+	if err != nil {
+		return nil, errors.New("an error occured while executing DoRaw")
+	}
+
+	resp, err := ioutil.ReadAll(resp_obj.Body)
+	resp_text := bytes.NewBuffer(resp).String()
+
+	if resp_obj.StatusCode == 200 && strings.Contains(resp_text, "<string>Authentication failed: Invalid username or password</string>") {
+		// log.Fatal("authentication failed: Invalid username or password")
+		return nil, errors.New("authentication failed: Invalid username or password")
+	}
+
+	return &resp_text, nil
 }
 
 // Takes raw payload and does the http request
